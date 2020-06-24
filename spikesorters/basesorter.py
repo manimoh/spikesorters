@@ -20,11 +20,11 @@ a way to adapt params with datasets.
 import time
 import copy
 from pathlib import Path
-import shutil
 import os
 import datetime
 import json
 import traceback
+import shutil
 from joblib import Parallel, delayed
 
 import numpy as np
@@ -32,6 +32,7 @@ import numpy as np
 import spikeextractors as se
 from spikeextractors.baseextractor import _check_json
 from .sorter_tools import SpikeSortingError
+
 
 class BaseSorter:
     sorter_name = ''  # convinience for reporting
@@ -60,6 +61,9 @@ class BaseSorter:
         if output_folder is None:
             output_folder = self.sorter_name + '_output'
         output_folder = Path(output_folder).absolute()
+
+        if output_folder.is_dir():
+            shutil.rmtree(str(output_folder))
 
         if grouping_property is None:
             # only one groups
@@ -158,7 +162,7 @@ class BaseSorter:
         except Exception as err:
             if raise_error:
                 raise SpikeSortingError(f"Spike sorting failed: {err}. You can inspect the runtime trace in "
-                                        f"the 'spikesorters_log.txt' of the output folder.'")
+                                        f"the {self.sorter_name}.log of the output folder.'")
             else:
                 run_time = None
                 log['error'] = True
@@ -169,7 +173,7 @@ class BaseSorter:
         # dump log inside folders
         for i in range(len(self.output_folders)):
             output_folder = self.output_folders[i]
-            runtime_trace_path = output_folder / 'spikesorters_log.txt'
+            runtime_trace_path = output_folder / f'{self.sorter_name}.log'
             runtime_trace = []
             if runtime_trace_path.is_file():
                 with open(runtime_trace_path, 'r') as fp:
